@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 
 void main() {
   runApp(const CORSITApp());
@@ -314,23 +315,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             child: AnimatedBuilder(
               animation: _robotAnimation,
               builder: (context, child) {
-                return Transform.translate(
-                  offset: Offset(0, _robotAnimation.value * 10),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E1E1E),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: const Color(0xFFFF8C00),
-                        width: 2,
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.smart_toy,
-                      color: Color(0xFFFF8C00),
-                      size: 80,
-                    ),
-                  ),
+                return Lottie.asset(
+                  'assets/animations/robo.lottie', // Replace with your file name
+                  width: 250,
+                  height: 250,
+                  fit: BoxFit.cover,
                 );
               },
             ),
