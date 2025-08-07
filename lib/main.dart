@@ -56,8 +56,10 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   int _selectedIndex = 0;
+  late AnimationController _robotAnimationController;
+  late Animation<double> _robotAnimation;
 
   final List<Widget> _pages = [
     const HomeScreen(),
@@ -65,6 +67,29 @@ class _HomePageState extends State<HomePage> {
     const ProjectsScreen(),
     const TeamScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _robotAnimationController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    );
+    _robotAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _robotAnimationController,
+      curve: Curves.easeInOut,
+    ));
+    _robotAnimationController.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _robotAnimationController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -209,172 +234,275 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+  late AnimationController _robotAnimationController;
+  late Animation<double> _robotAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _robotAnimationController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    );
+    _robotAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _robotAnimationController,
+      curve: Curves.easeInOut,
+    ));
+    _robotAnimationController.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _robotAnimationController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildWelcomeCard(),
-          const SizedBox(height: 24),
-          _buildStatsSection(),
-          const SizedBox(height: 24),
-          _buildRecentActivities(),
+          _buildHeroSection(),
+          _buildEventsSection(),
+          _buildProjectsSection(),
         ],
       ),
     );
   }
 
-  Widget _buildWelcomeCard() {
+  Widget _buildHeroSection() {
     return Container(
-      width: double.infinity,
+      height: 300,
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        children: [
+          // Left side - Text
+          Expanded(
+            flex: 1,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Learn with us.',
+                  style: TextStyle(
+                    color: Color(0xFFFF8C00),
+                    fontSize: 36,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Explore the world of robotics with our innovative projects and cutting-edge technology.',
+                  style: TextStyle(
+                    color: Color(0xFFE0E0E0),
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Right side - Animated Robot
+          Expanded(
+            flex: 1,
+            child: AnimatedBuilder(
+              animation: _robotAnimation,
+              builder: (context, child) {
+                return Transform.translate(
+                  offset: Offset(0, _robotAnimation.value * 10),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E1E1E),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: const Color(0xFFFF8C00),
+                        width: 2,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.smart_toy,
+                      color: Color(0xFFFF8C00),
+                      size: 80,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEventsSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Our Events',
+            style: TextStyle(
+              color: Color(0xFFE0E0E0),
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 20),
+          _buildEventCard(
+            'RoboCor',
+            'The ultimate battleground for innovation, where robots clash and creativity thrives!',
+          ),
+          const SizedBox(height: 16),
+          _buildEventCard(
+            'Workshop',
+            'Learn the basics of robotics and automation in this hands-on workshop.',
+          ),
+          const SizedBox(height: 16),
+          _buildEventCard(
+            'RoboExpo',
+            'A showcase of cutting-edge robotics, AI, and automation innovations.',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEventCard(String title, String tagline) {
+    return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFF8C00), width: 2),
+        border: Border.all(
+          color: const Color(0xFFFF8C00).withOpacity(0.3),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.smart_toy, color: Color(0xFFFF8C00), size: 32),
-              const SizedBox(width: 12),
-              const Text(
-                'Welcome to CORSIT!',
-                style: TextStyle(
-                  color: Color(0xFFE0E0E0),
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'Explore the world of robotics with our innovative projects and cutting-edge technology.',
-            style: TextStyle(color: Color(0xFFE0E0E0), fontSize: 16),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Club Statistics',
-          style: TextStyle(
-            color: Color(0xFFE0E0E0),
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard('Active Projects', '15', Icons.build),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildStatCard('Team Members', '50+', Icons.people),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildStatCard('Events This Month', '5', Icons.event),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(String title, String value, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFF8C00).withOpacity(0.3)),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: const Color(0xFFFF8C00), size: 32),
-          const SizedBox(height: 8),
           Text(
-            value,
+            title,
             style: const TextStyle(
-              color: Color(0xFFE0E0E0),
+              color: Color(0xFFFF8C00),
               fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
           ),
+          const SizedBox(height: 8),
           Text(
-            title,
-            style: const TextStyle(color: Color(0xFFE0E0E0), fontSize: 12),
-            textAlign: TextAlign.center,
+            tagline,
+            style: const TextStyle(
+              color: Color(0xFFE0E0E0),
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              const Icon(
+                Icons.location_on,
+                color: Color(0xFFFF8C00),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Yet to be announced',
+                style: TextStyle(
+                  color: Color(0xFFE0E0E0),
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(width: 24),
+              const Icon(
+                Icons.calendar_today,
+                color: Color(0xFFFF8C00),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Yet to be announced',
+                style: TextStyle(
+                  color: Color(0xFFE0E0E0),
+                  fontSize: 14,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildRecentActivities() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Recent Activities',
-          style: TextStyle(
-            color: Color(0xFFE0E0E0),
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+  Widget _buildProjectsSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Our Projects',
+            style: TextStyle(
+              color: Color(0xFFE0E0E0),
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-        _buildActivityItem(
-          'New Robot Assembly Workshop',
-          '2 hours ago',
-          Icons.build,
-        ),
-        _buildActivityItem(
-          'Competition Registration Open',
-          '1 day ago',
-          Icons.emoji_events,
-        ),
-        _buildActivityItem('Team Meeting Scheduled', '2 days ago', Icons.group),
-      ],
+          const SizedBox(height: 20),
+          _buildProjectCard(
+            'Line Following Robot',
+            'An autonomous robot that follows a path using sensors.',
+            Icons.track_changes,
+          ),
+          const SizedBox(height: 16),
+          _buildProjectCard(
+            'Gesture Controlled Bot',
+            'A robot that responds to hand gestures using OpenCV.',
+            Icons.gesture,
+          ),
+          const SizedBox(height: 16),
+          _buildProjectCard(
+            'Smart Home Automation',
+            'IoT-based home automation for energy efficiency.',
+            Icons.home,
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildActivityItem(String title, String time, IconData icon) {
+  Widget _buildProjectCard(String title, String description, IconData icon) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: const Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFF8C00).withOpacity(0.2)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFFF8C00).withOpacity(0.3),
+        ),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: const Color(0xFFFF8C00).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: const Color(0xFFFF8C00), size: 20),
+            child: Icon(icon, color: const Color(0xFFFF8C00), size: 32),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -383,12 +511,13 @@ class HomeScreen extends StatelessWidget {
                   title,
                   style: const TextStyle(
                     color: Color(0xFFE0E0E0),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
+                const SizedBox(height: 8),
                 Text(
-                  time,
+                  description,
                   style: const TextStyle(
                     color: Color(0xFFE0E0E0),
                     fontSize: 14,
@@ -1004,7 +1133,9 @@ class ContactUsScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFF8C00).withOpacity(0.3)),
+        border: Border.all(
+          color: const Color(0xFFFF8C00).withOpacity(0.3),
+        ),
       ),
       child: Row(
         children: [
