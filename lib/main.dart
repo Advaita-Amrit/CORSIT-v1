@@ -75,13 +75,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       duration: const Duration(seconds: 2),
       vsync: this,
     );
-    _robotAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _robotAnimationController,
-      curve: Curves.easeInOut,
-    ));
+    _robotAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _robotAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
     _robotAnimationController.repeat(reverse: true);
   }
 
@@ -252,13 +251,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       duration: const Duration(seconds: 2),
       vsync: this,
     );
-    _robotAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _robotAnimationController,
-      curve: Curves.easeInOut,
-    ));
+    _robotAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _robotAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
     _robotAnimationController.repeat(reverse: true);
   }
 
@@ -305,10 +303,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 const SizedBox(height: 16),
                 const Text(
                   'Explore the world of robotics with our innovative projects and cutting-edge technology.',
-                  style: TextStyle(
-                    color: Color(0xFFE0E0E0),
-                    fontSize: 16,
-                  ),
+                  style: TextStyle(color: Color(0xFFE0E0E0), fontSize: 16),
                 ),
               ],
             ),
@@ -385,9 +380,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       decoration: BoxDecoration(
         color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFFF8C00).withOpacity(0.3),
-        ),
+        border: Border.all(color: const Color(0xFFFF8C00).withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -403,26 +396,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           const SizedBox(height: 8),
           Text(
             tagline,
-            style: const TextStyle(
-              color: Color(0xFFE0E0E0),
-              fontSize: 16,
-            ),
+            style: const TextStyle(color: Color(0xFFE0E0E0), fontSize: 16),
           ),
           const SizedBox(height: 16),
           Row(
             children: [
-              const Icon(
-                Icons.location_on,
-                color: Color(0xFFFF8C00),
-                size: 20,
-              ),
+              const Icon(Icons.location_on, color: Color(0xFFFF8C00), size: 20),
               const SizedBox(width: 8),
               const Text(
                 'Yet to be announced',
-                style: TextStyle(
-                  color: Color(0xFFE0E0E0),
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: Color(0xFFE0E0E0), fontSize: 14),
               ),
               const SizedBox(width: 24),
               const Icon(
@@ -433,10 +416,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               const SizedBox(width: 8),
               const Text(
                 'Yet to be announced',
-                style: TextStyle(
-                  color: Color(0xFFE0E0E0),
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: Color(0xFFE0E0E0), fontSize: 14),
               ),
             ],
           ),
@@ -488,9 +468,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       decoration: BoxDecoration(
         color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFFF8C00).withOpacity(0.3),
-        ),
+        border: Border.all(color: const Color(0xFFFF8C00).withOpacity(0.3)),
       ),
       child: Row(
         children: [
@@ -803,28 +781,28 @@ class TeamScreen extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           _buildTeamMember(
-            'John Doe',
-            'Team Lead',
-            'john.doe@corsit.com',
+            'Advaita Amrit',
+            'Member',
+            'advaitaamrit@gmail.com',
             Icons.person,
           ),
           _buildTeamMember(
-            'Jane Smith',
-            'Technical Lead',
-            'jane.smith@corsit.com',
+            'Yash Jadhav',
+            'Member',
+            'yashuyashu@corsit.sit',
             Icons.engineering,
           ),
           _buildTeamMember(
-            'Mike Johnson',
-            'Project Manager',
-            'mike.johnson@corsit.com',
+            'Jishnu Khargharia',
+            'Treasurer',
+            'treasurersahab@corsit.sit',
             Icons.manage_accounts,
           ),
           _buildTeamMember(
-            'Sarah Wilson',
-            'Research Lead',
-            'sarah.wilson@corsit.com',
-            Icons.science,
+            'Dogesh Bhai',
+            'Elite Member',
+            'dogeshbhai@corsit.com',
+            Icons.pets,
           ),
         ],
       ),
@@ -1133,9 +1111,7 @@ class ContactUsScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFFFF8C00).withOpacity(0.3),
-        ),
+        border: Border.all(color: const Color(0xFFFF8C00).withOpacity(0.3)),
       ),
       child: Row(
         children: [
