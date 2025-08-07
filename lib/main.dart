@@ -316,7 +316,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               animation: _robotAnimation,
               builder: (context, child) {
                 return Lottie.asset(
-                  'assets/animations/robo.lottie', // Replace with your file name
+                  'assets/animations/robo.json', // Replace with your file name
                   width: 250,
                   height: 250,
                   fit: BoxFit.cover,
@@ -868,51 +868,41 @@ class AboutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('About CORSIT')),
+      appBar: AppBar(
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
+        title: const Text('About Us'),
+      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFFF8C00), width: 2),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'About CORSIT',
-                    style: TextStyle(
-                      color: Color(0xFFE0E0E0),
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'CORSIT (Club Of Robotics) is a premier robotics club dedicated to fostering innovation and technological advancement. Our mission is to inspire the next generation of robotics engineers and innovators.',
-                    style: TextStyle(color: Color(0xFFE0E0E0), fontSize: 16),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Our Mission',
+          children: const [
+            Text(
+              'About Us',
               style: TextStyle(
-                color: Color(0xFFE0E0E0),
-                fontSize: 20,
+                color: Color(0xFFFF8C00),
+                fontSize: 28,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 12),
-            const Text(
-              'To provide hands-on experience in robotics and automation, promote STEM education, and create a community of passionate innovators.',
+            SizedBox(height: 20),
+            Text(
+              'CORSIT is a passionate community of robotics enthusiasts, innovators, and learners. Our mission is to foster creativity, technical skills, and teamwork through hands-on robotics projects and events.',
+              style: TextStyle(color: Color(0xFFE0E0E0), fontSize: 16),
+            ),
+            SizedBox(height: 12),
+            Text(
+              'We believe in learning by doing, and our club provides a platform for students to explore robotics, automation, and AI. We value collaboration, curiosity, and a drive to solve real-world problems.',
+              style: TextStyle(color: Color(0xFFE0E0E0), fontSize: 16),
+            ),
+            SizedBox(height: 12),
+            Text(
+              'Join us to participate in workshops, competitions, and projects that push the boundaries of technology and innovation!',
               style: TextStyle(color: Color(0xFFE0E0E0), fontSize: 16),
             ),
           ],
@@ -929,55 +919,34 @@ class AlumniScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Alumni Network')),
-      body: SingleChildScrollView(
+      body: ListView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Alumni Network',
-              style: TextStyle(
-                color: Color(0xFFE0E0E0),
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Connect with our successful alumni who have made significant contributions to the field of robotics and technology.',
-              style: TextStyle(color: Color(0xFFE0E0E0), fontSize: 16),
-            ),
-            const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: const Color(0xFFFF8C00).withOpacity(0.3),
-                ),
-              ),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Alumni Features',
-                    style: TextStyle(
-                      color: Color(0xFFE0E0E0),
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  Text(
-                    '• Networking opportunities\n• Mentorship programs\n• Career guidance\n• Industry connections',
-                    style: TextStyle(color: Color(0xFFE0E0E0), fontSize: 16),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        children: [
+          _alumniCard('Rohan Kumar', 'Class of 2022'),
+          _alumniCard('Priya Singh', 'Class of 2021'),
+          _alumniCard('Amit Patel', 'Class of 2020'),
+        ],
+      ),
+    );
+  }
+
+  Widget _alumniCard(String name, String year) {
+    return Card(
+      color: const Color(0xFF1E1E1E),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: ListTile(
+        leading: const CircleAvatar(
+          backgroundColor: Color(0xFFFF8C00),
+          child: Icon(Icons.person, color: Colors.black),
         ),
+        title: Text(
+          name,
+          style: const TextStyle(
+            color: Color(0xFFE0E0E0),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        subtitle: Text(year, style: const TextStyle(color: Color(0xFFE0E0E0))),
       ),
     );
   }
@@ -988,154 +957,119 @@ class ContactUsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final _formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController();
+    final emailController = TextEditingController();
+    final messageController = TextEditingController();
     return Scaffold(
       appBar: AppBar(title: const Text('Contact Us')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Get in Touch',
-              style: TextStyle(
-                color: Color(0xFFE0E0E0),
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+      body: ListView(
+        padding: const EdgeInsets.all(24),
+        children: [
+          const Text(
+            'We would love to hear from you! Connect with us on social media or send us a message below.',
+            style: TextStyle(color: Color(0xFFE0E0E0), fontSize: 16),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _socialIcon(Icons.facebook, 'https://facebook.com'),
+              const SizedBox(width: 16),
+              _socialIcon(Icons.instagram, 'https://instagram.com'),
+              const SizedBox(width: 16),
+              _socialIcon(Icons.linkedin, 'https://linkedin.com'),
+              const SizedBox(width: 16),
+              _socialIcon(
+                Icons.code,
+                'https://github.com/Advaita-Amrit/CORSIT-v1',
               ),
-            ),
-            const SizedBox(height: 20),
-            _buildContactCard('Email', 'contact@corsit.com', Icons.email),
-            _buildContactCard('Phone', '+1 (555) 123-4567', Icons.phone),
-            _buildContactCard(
-              'Address',
-              '123 Robotics Street, Tech City, TC 12345',
-              Icons.location_on,
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Send us a Message',
-              style: TextStyle(
-                color: Color(0xFFE0E0E0),
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: const Color(0xFFFF8C00).withOpacity(0.3),
+            ],
+          ),
+          const SizedBox(height: 32),
+          Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                TextFormField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Your Name',
+                    labelStyle: TextStyle(color: Color(0xFFE0E0E0)),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFF8C00)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFF8C00)),
+                    ),
+                  ),
+                  style: const TextStyle(color: Color(0xFFE0E0E0)),
                 ),
-              ),
-              child: Column(
-                children: [
-                  TextField(
-                    decoration: InputDecoration(
-                      labelText: 'Name',
-                      labelStyle: const TextStyle(color: Color(0xFFE0E0E0)),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Color(0xFFFF8C00)),
-                      ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: emailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Your Email',
+                    labelStyle: TextStyle(color: Color(0xFFE0E0E0)),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFF8C00)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFF8C00)),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    decoration: InputDecoration(
-                      labelText: 'Email',
-                      labelStyle: const TextStyle(color: Color(0xFFE0E0E0)),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Color(0xFFFF8C00)),
-                      ),
+                  style: const TextStyle(color: Color(0xFFE0E0E0)),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: messageController,
+                  maxLines: 4,
+                  decoration: const InputDecoration(
+                    labelText: 'Your Message',
+                    labelStyle: TextStyle(color: Color(0xFFE0E0E0)),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFF8C00)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFF8C00)),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    maxLines: 4,
-                    decoration: InputDecoration(
-                      labelText: 'Message',
-                      labelStyle: const TextStyle(color: Color(0xFFE0E0E0)),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Color(0xFFFF8C00)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {},
+                  style: const TextStyle(color: Color(0xFFE0E0E0)),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFFF8C00),
                       foregroundColor: Colors.black,
-                      minimumSize: const Size(double.infinity, 50),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    child: const Text('Send Message'),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildContactCard(String title, String value, IconData icon) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFF8C00).withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFF8C00).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: const Color(0xFFFF8C00), size: 24),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Color(0xFFE0E0E0),
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    color: Color(0xFFE0E0E0),
-                    fontSize: 14,
+                    onPressed: () {
+                      // You can add form validation and submission logic here
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Message submitted!')),
+                      );
+                    },
+                    child: const Text('Submit', style: TextStyle(fontSize: 18)),
                   ),
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _socialIcon(IconData icon, String url) {
+    return InkWell(
+      onTap: () async {
+        // You can use url_launcher package for real links
+      },
+      child: CircleAvatar(
+        backgroundColor: const Color(0xFFFF8C00),
+        child: Icon(icon, color: Colors.black),
       ),
     );
   }
