@@ -45,22 +45,21 @@ class CORSITApp extends StatelessWidget {
           foregroundColor: Colors.black,
         ),
       ),
-      home: const HomePage(),
+      home: const RootPage(),
     );
   }
 }
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class RootPage extends StatefulWidget {
+  const RootPage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<RootPage> createState() => _RootPageState();
 }
 
-class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
+class _RootPageState extends State<RootPage> with TickerProviderStateMixin {
   int _selectedIndex = 0;
   late AnimationController _robotAnimationController;
-  late Animation<double> _robotAnimation;
 
   final List<Widget> _pages = [
     const HomeScreen(),
@@ -76,12 +75,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       duration: const Duration(seconds: 2),
       vsync: this,
     );
-    _robotAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _robotAnimationController,
-        curve: Curves.easeInOut,
-      ),
-    );
     _robotAnimationController.repeat(reverse: true);
   }
 
@@ -95,15 +88,20 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
-        title: Column(
+        leading: _selectedIndex == 0
+            ? Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.menu),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
+              )
+            : IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => setState(() => _selectedIndex = 0),
+              ),
+        title: const Column(
           children: [
-            const Text(
+            Text(
               'CORSIT',
               style: TextStyle(
                 color: Color(0xFFFF8C00),
@@ -111,7 +109,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const Text(
+            Text(
               'Welcome to our official page!',
               style: TextStyle(
                 color: Color(0xFFE0E0E0),
@@ -157,12 +155,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(color: Color(0xFFFF8C00)),
+          const DrawerHeader(
+            decoration: BoxDecoration(color: Color(0xFFFF8C00)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'CORSIT',
                   style: TextStyle(
                     color: Colors.black,
@@ -170,25 +168,51 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 8),
-                const Text(
+                SizedBox(height: 8),
+                Text(
                   'Club Of Robotics',
                   style: TextStyle(color: Colors.black, fontSize: 16),
                 ),
               ],
             ),
           ),
-          _buildDrawerItem('Home', Icons.home, () => _navigateToPage(0)),
-          _buildDrawerItem('About', Icons.info, () => _navigateToPage(4)),
-          _buildDrawerItem('Event', Icons.event, () => _navigateToPage(1)),
-          _buildDrawerItem('Projects', Icons.build, () => _navigateToPage(2)),
-          _buildDrawerItem('Team', Icons.people, () => _navigateToPage(3)),
-          _buildDrawerItem('Alumni', Icons.school, () => _navigateToPage(5)),
-          _buildDrawerItem(
-            'Contact Us',
-            Icons.contact_support,
-            () => _navigateToPage(6),
-          ),
+          _buildDrawerItem('Home', Icons.home, () {
+            Navigator.pop(context); // Close drawer
+            setState(() => _selectedIndex = 0);
+          }),
+          _buildDrawerItem('About', Icons.info, () {
+            Navigator.pop(context); // Close drawer
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AboutScreen()),
+            );
+          }),
+          _buildDrawerItem('Event', Icons.event, () {
+            Navigator.pop(context); // Close drawer
+            setState(() => _selectedIndex = 1);
+          }),
+          _buildDrawerItem('Projects', Icons.build, () {
+            Navigator.pop(context); // Close drawer
+            setState(() => _selectedIndex = 2);
+          }),
+          _buildDrawerItem('Team', Icons.people, () {
+            Navigator.pop(context); // Close drawer
+            setState(() => _selectedIndex = 3);
+          }),
+          _buildDrawerItem('Alumni', Icons.school, () {
+            Navigator.pop(context); // Close drawer
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AlumniScreen()),
+            );
+          }),
+          _buildDrawerItem('Contact Us', Icons.contact_support, () {
+            Navigator.pop(context); // Close drawer
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ContactUsScreen()),
+            );
+          }),
         ],
       ),
     );
@@ -201,37 +225,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       onTap: onTap,
     );
   }
-
-  void _navigateToPage(int index) {
-    Navigator.pop(context); // Close drawer
-    if (index < 4) {
-      setState(() {
-        _selectedIndex = index;
-      });
-    } else {
-      // Navigate to pages not in bottom navigation
-      switch (index) {
-        case 4: // About
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AboutScreen()),
-          );
-          break;
-        case 5: // Alumni
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AlumniScreen()),
-          );
-          break;
-        case 6: // Contact Us
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const ContactUsScreen()),
-          );
-          break;
-      }
-    }
-  }
 }
 
 class HomeScreen extends StatefulWidget {
@@ -243,7 +236,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _robotAnimationController;
-  late Animation<double> _robotAnimation;
 
   @override
   void initState() {
@@ -251,12 +243,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _robotAnimationController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
-    );
-    _robotAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _robotAnimationController,
-        curve: Curves.easeInOut,
-      ),
     );
     _robotAnimationController.repeat(reverse: true);
   }
@@ -287,13 +273,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: Row(
         children: [
           // Left side - Text
-          Expanded(
+          const Expanded(
             flex: 1,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Learn with us.',
                   style: TextStyle(
                     color: Color(0xFFFF8C00),
@@ -301,8 +287,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 16),
-                const Text(
+                SizedBox(height: 16),
+                Text(
                   'Explore the world of robotics with our innovative projects and cutting-edge technology.',
                   style: TextStyle(color: Color(0xFFE0E0E0), fontSize: 16),
                 ),
@@ -313,7 +299,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Expanded(
             flex: 1,
             child: AnimatedBuilder(
-              animation: _robotAnimation,
+              animation: _robotAnimationController,
               builder: (context, child) {
                 return Lottie.asset(
                   'assets/animations/robo.json', // Replace with your file name
@@ -388,22 +374,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             style: const TextStyle(color: Color(0xFFE0E0E0), fontSize: 16),
           ),
           const SizedBox(height: 16),
-          Row(
+          const Row(
             children: [
-              const Icon(Icons.location_on, color: Color(0xFFFF8C00), size: 20),
-              const SizedBox(width: 8),
-              const Text(
+              Icon(Icons.location_on, color: Color(0xFFFF8C00), size: 20),
+              SizedBox(width: 8),
+              Text(
                 'Yet to be announced',
                 style: TextStyle(color: Color(0xFFE0E0E0), fontSize: 14),
               ),
-              const SizedBox(width: 24),
-              const Icon(
+              SizedBox(width: 24),
+              Icon(
                 Icons.calendar_today,
                 color: Color(0xFFFF8C00),
                 size: 20,
               ),
-              const SizedBox(width: 8),
-              const Text(
+              SizedBox(width: 8),
+              Text(
                 'Yet to be announced',
                 style: TextStyle(color: Color(0xFFE0E0E0), fontSize: 14),
               ),
@@ -502,48 +488,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 class EventsScreen extends StatelessWidget {
   const EventsScreen({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Upcoming Events',
-            style: TextStyle(
-              color: Color(0xFFE0E0E0),
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 20),
-          _buildEventCard(
-            'Robotics Workshop',
-            'Learn the basics of robotics and Arduino programming',
-            'Dec 15, 2024',
-            '10:00 AM',
-            Icons.school,
-          ),
-          _buildEventCard(
-            'Competition Day',
-            'Annual robotics competition for all members',
-            'Dec 20, 2024',
-            '2:00 PM',
-            Icons.emoji_events,
-          ),
-          _buildEventCard(
-            'Guest Lecture',
-            'Industry expert sharing insights on AI in robotics',
-            'Dec 25, 2024',
-            '6:00 PM',
-            Icons.person,
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildEventCard(
     String title,
     String description,
@@ -615,55 +559,57 @@ class EventsScreen extends StatelessWidget {
       ),
     );
   }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Events'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Upcoming Events',
+              style: TextStyle(
+                color: Color(0xFFE0E0E0),
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildEventCard(
+              'Robotics Workshop',
+              'CORSIT offers free workshops on IoT, Arduino, cloud, and more, providing students with hands-on experience in building basic bots such as LFR, Bluetooth, and obstacle-avoiding bots. Participants learn to code and use different components to program the bots brain. The club also conducts a paid workshop where a mentor guides students on emerging technologies with a mix of studio practice and lectures. The workshop aims to enhance practical skills and teach the theory and context behind the practice.',
+              'Yet to be announced',
+              'Yet to be announced',
+              Icons.school,
+            ),
+            _buildEventCard(
+              'RoboCor',
+              'Robocor, a nationally renowned Robotics Competition, which is one of the biggest events in Karnataka. It provides a platform for participants to showcase their innovative designs and compete for glory. In Robocor, the team has successfully organized several events such as Dcode, Spardha, Rugged Rage, Robo Soccer, Arduino Clash, Binary Rash, Project Symposium, Paper Presentation, and Init_Rc.',
+              'Yet to be announced',
+              'Yet to be announced',
+              Icons.emoji_events,
+            ),
+            _buildEventCard(
+              'RoboExpo',
+              'ROBOEXPO is an annual event organized by the Robotics club of SIT CORSIT. The primary objective is to introduce the club and its activities to the newcomers by displaying the bots that the members have created over the year. The event showcases various bots such as Line Follower Robots (LFR), Roboracer, Gesture controlled bots, Bluetooth controlled bots, etc. The exhibition provides students with an opportunity to witness and understand the workings of these bots up close. It serves as an excellent platform for the Robotics club to attract new members who are interested in this field.',
+              'Yet to be announced',
+              'Yet to be announced',
+              Icons.person,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class ProjectsScreen extends StatelessWidget {
   const ProjectsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Our Projects',
-            style: TextStyle(
-              color: Color(0xFFE0E0E0),
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 20),
-          _buildProjectCard(
-            'Autonomous Robot',
-            'Building a self-navigating robot using Arduino and sensors',
-            'In Progress',
-            Icons.smart_toy,
-          ),
-          _buildProjectCard(
-            'Drone Control System',
-            'Developing a custom flight controller for quadcopters',
-            'Planning',
-            Icons.flight,
-          ),
-          _buildProjectCard(
-            'Smart Home Automation',
-            'IoT-based home automation using Raspberry Pi',
-            'Completed',
-            Icons.home,
-          ),
-          _buildProjectCard(
-            'Computer Vision Robot',
-            'AI-powered robot with object recognition capabilities',
-            'In Progress',
-            Icons.visibility,
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildProjectCard(
     String title,
@@ -722,29 +668,57 @@ class ProjectsScreen extends StatelessWidget {
             description,
             style: const TextStyle(color: Color(0xFFE0E0E0), fontSize: 14),
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 12,
-                backgroundColor: const Color(0xFFFF8C00),
-                child: Text(
-                  '5',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Team Members',
-                style: const TextStyle(color: Color(0xFFE0E0E0), fontSize: 12),
-              ),
-            ],
-          ),
         ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Projects'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Bots & Projects',
+              style: TextStyle(
+                color: Color(0xFFE0E0E0),
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildProjectCard(
+              'Line Following Robot',
+              'Building a self-navigating robot using Arduino and sensors',
+              'Completed',
+              Icons.smart_toy,
+            ),
+            _buildProjectCard(
+              'Gesture Controlled Bot',
+              'A robot that responds to hand gestures using OpenCV.',
+              'Completed',
+              Icons.gesture,
+            ),
+            _buildProjectCard(
+              'Smart Home Automation',
+              'IoT-based home automation using Raspberry Pi',
+              'Completed',
+              Icons.home,
+            ),
+            _buildProjectCard(
+              'Computer Vision Robot',
+              'AI-powered robot with object recognition capabilities',
+              'In Progress',
+              Icons.visibility,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -752,51 +726,6 @@ class ProjectsScreen extends StatelessWidget {
 
 class TeamScreen extends StatelessWidget {
   const TeamScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Our Team',
-            style: TextStyle(
-              color: Color(0xFFE0E0E0),
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 20),
-          _buildTeamMember(
-            'Advaita Amrit',
-            'Member',
-            'advaitaamrit@gmail.com',
-            Icons.person,
-          ),
-          _buildTeamMember(
-            'Yash Jadhav',
-            'Member',
-            'yashuyashu@corsit.sit',
-            Icons.engineering,
-          ),
-          _buildTeamMember(
-            'Jishnu Khargharia',
-            'Treasurer',
-            'treasurersahab@corsit.sit',
-            Icons.manage_accounts,
-          ),
-          _buildTeamMember(
-            'Dogesh Bhai',
-            'Elite Member',
-            'dogeshbhai@corsit.com',
-            Icons.pets,
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildTeamMember(
     String name,
@@ -860,6 +789,56 @@ class TeamScreen extends StatelessWidget {
       ),
     );
   }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Team'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Our Team',
+              style: TextStyle(
+                color: Color(0xFFE0E0E0),
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildTeamMember(
+              'Advaita Amrit',
+              'Member',
+              'advaitaamrit@gmail.com',
+              Icons.person,
+            ),
+            _buildTeamMember(
+              'Yash Jadhav',
+              'Member',
+              'yashuyashu@corsit.sit',
+              Icons.engineering,
+            ),
+            _buildTeamMember(
+              'Jishnu Khargharia',
+              'Treasurer',
+              'treasurersahab@corsit.sit',
+              Icons.manage_accounts,
+            ),
+            _buildTeamMember(
+              'Dogesh Bhai',
+              'Elite Member',
+              'dogeshbhai@corsit.com',
+              Icons.pets,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class AboutScreen extends StatelessWidget {
@@ -869,11 +848,9 @@ class AboutScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
         ),
         title: const Text('About Us'),
       ),
@@ -892,7 +869,7 @@ class AboutScreen extends StatelessWidget {
             ),
             SizedBox(height: 20),
             Text(
-              'CORSIT is a passionate community of robotics enthusiasts, innovators, and learners. Our mission is to foster creativity, technical skills, and teamwork through hands-on robotics projects and events.',
+              'CORSIT, the robotics club of SIT, is a vibrant community of passionate robotics enthusiasts dedicated to learning, building, and innovating together. Since its inception in 2006, the club has organized national-level workshops and actively competed in prestigious events across the country. As the official hub for robotics activities at SIT, CORSIT provides students with hands-on experience, fostering creativity and technical excellence. With a mission to inspire and empower future innovators, the club continues to push the boundaries of robotics through collaboration and practical learning.',
               style: TextStyle(color: Color(0xFFE0E0E0), fontSize: 16),
             ),
             SizedBox(height: 12),
@@ -915,21 +892,6 @@ class AboutScreen extends StatelessWidget {
 class AlumniScreen extends StatelessWidget {
   const AlumniScreen({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Alumni Network')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _alumniCard('Rohan Kumar', 'Class of 2022'),
-          _alumniCard('Priya Singh', 'Class of 2021'),
-          _alumniCard('Amit Patel', 'Class of 2020'),
-        ],
-      ),
-    );
-  }
-
   Widget _alumniCard(String name, String year) {
     return Card(
       color: const Color(0xFF1E1E1E),
@@ -950,10 +912,46 @@ class AlumniScreen extends StatelessWidget {
       ),
     );
   }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('Alumni Network'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _alumniCard(
+            'Ojas Sangra',
+            'Oracle - Associate Applications Developer',
+          ),
+          _alumniCard('Ashish Mahanth', 'Microchip -Software Engineer 1'),
+          _alumniCard('Yashaswini', 'Saks Cloud Services - Cloud Engineer'),
+        ],
+      ),
+    );
+  }
 }
 
 class ContactUsScreen extends StatelessWidget {
   const ContactUsScreen({super.key});
+
+  Widget _socialIcon(IconData icon, String url) {
+    return InkWell(
+      onTap: () async {
+        // You can use url_launcher package for real links
+      },
+      child: CircleAvatar(
+        backgroundColor: const Color(0xFFFF8C00),
+        child: Icon(icon, color: Colors.black),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -962,7 +960,13 @@ class ContactUsScreen extends StatelessWidget {
     final emailController = TextEditingController();
     final messageController = TextEditingController();
     return Scaffold(
-      appBar: AppBar(title: const Text('Contact Us')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('Contact Us'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
@@ -976,9 +980,7 @@ class ContactUsScreen extends StatelessWidget {
             children: [
               _socialIcon(Icons.facebook, 'https://facebook.com'),
               const SizedBox(width: 16),
-              _socialIcon(Icons.instagram, 'https://instagram.com'),
-              const SizedBox(width: 16),
-              _socialIcon(Icons.linkedin, 'https://linkedin.com'),
+              _socialIcon(Icons.link, 'https://linkedin.com'),
               const SizedBox(width: 16),
               _socialIcon(
                 Icons.code,
@@ -1061,18 +1063,6 @@ class ContactUsScreen extends StatelessWidget {
       ),
     );
   }
-
-  Widget _socialIcon(IconData icon, String url) {
-    return InkWell(
-      onTap: () async {
-        // You can use url_launcher package for real links
-      },
-      child: CircleAvatar(
-        backgroundColor: const Color(0xFFFF8C00),
-        child: Icon(icon, color: Colors.black),
-      ),
-    );
-  }
 }
 
 class ChatScreen extends StatelessWidget {
@@ -1081,7 +1071,13 @@ class ChatScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Chat Support')),
+      appBar: AppBar(
+        title: const Text('Chat Support'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: Container(
         color: const Color(0xFF121212),
         child: const Center(
@@ -1107,7 +1103,7 @@ class ChatScreen extends StatelessWidget {
                 'We\'re working on implementing real-time chat support.',
                 style: TextStyle(color: Color(0xFFE0E0E0), fontSize: 16),
                 textAlign: TextAlign.center,
-              ),
+              ),    
             ],
           ),
         ),
