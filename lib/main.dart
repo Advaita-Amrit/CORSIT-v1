@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 void main() {
   runApp(const CORSITApp());
@@ -197,7 +202,10 @@ class _RootPageState extends State<RootPage> with TickerProviderStateMixin {
           }),
           _buildDrawerItem('Team', Icons.people, () {
             Navigator.pop(context); // Close drawer
-            setState(() => _selectedIndex = 3);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AlumniScreen()),
+            );
           }),
           _buildDrawerItem('Alumni', Icons.school, () {
             Navigator.pop(context); // Close drawer
@@ -383,11 +391,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 style: TextStyle(color: Color(0xFFE0E0E0), fontSize: 14),
               ),
               SizedBox(width: 24),
-              Icon(
-                Icons.calendar_today,
-                color: Color(0xFFFF8C00),
-                size: 20,
-              ),
+              Icon(Icons.calendar_today, color: Color(0xFFFF8C00), size: 20),
               SizedBox(width: 8),
               Text(
                 'Yet to be announced',
@@ -563,9 +567,7 @@ class EventsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Events'),
-      ),
+      appBar: AppBar(title: const Text('Events')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -582,7 +584,7 @@ class EventsScreen extends StatelessWidget {
             const SizedBox(height: 20),
             _buildEventCard(
               'Robotics Workshop',
-              'CORSIT offers free workshops on IoT, Arduino, cloud, and more, providing students with hands-on experience in building basic bots such as LFR, Bluetooth, and obstacle-avoiding bots. Participants learn to code and use different components to program the bots brain. The club also conducts a paid workshop where a mentor guides students on emerging technologies with a mix of studio practice and lectures. The workshop aims to enhance practical skills and teach the theory and context behind the practice.',
+              'CORSIT offers free workshops on IoT, Arduino, cloud, and more, providing students with hands-on experience in building basic bots suchs as LFR, Bluetooth, and obstacle-avoiding bots. Participants learn to code and use different components to program the bots brain. The club also conducts a paid workshop where a mentor guides students on emerging technologies with a mix of studio practice and lectures. The workshop aims to enhance practical skills and teach the theory and context behind the practice.',
               'Yet to be announced',
               'Yet to be announced',
               Icons.school,
@@ -676,9 +678,7 @@ class ProjectsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Projects'),
-      ),
+      appBar: AppBar(title: const Text('Projects')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -724,15 +724,53 @@ class ProjectsScreen extends StatelessWidget {
   }
 }
 
-class TeamScreen extends StatelessWidget {
+class TeamScreen extends StatefulWidget {
   const TeamScreen({super.key});
 
-  Widget _buildTeamMember(
-    String name,
-    String role,
-    String email,
-    IconData icon,
-  ) {
+  @override
+  State<TeamScreen> createState() => _TeamScreenState();
+}
+
+class _TeamScreenState extends State<TeamScreen> {
+  final List<TeamMember> _members = [
+    TeamMember(
+      'Advaita Amrit',
+      'Member',
+      'advaitaamrit@gmail.com',
+      Icons.person,
+    ),
+    TeamMember(
+      'Yash Jadhav',
+      'Member',
+      'yashuyashu@corsit.sit',
+      Icons.engineering,
+    ),
+    TeamMember(
+      'Jishnu Khargharia',
+      'Treasurer',
+      'treasurersahab@corsit.sit',
+      Icons.manage_accounts,
+    ),
+    TeamMember(
+      'Dogesh Bhai',
+      'Elite Member',
+      'dogeshbhai@corsit.com',
+      Icons.pets,
+    ),
+  ];
+
+  Future<void> _pickImage(int index) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _members[index].image = File(pickedFile.path);
+      });
+    }
+  }
+
+  Widget _buildTeamMember(int index) {
+    final member = _members[index];
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -743,13 +781,22 @@ class TeamScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFF8C00).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+          GestureDetector(
+            onTap: () => _pickImage(index),
+            child: CircleAvatar(
+              radius: 32,
+              backgroundColor: const Color(0xFFFF8C00),
+              child: member.image != null
+                  ? ClipOval(
+                      child: Image.file(
+                        member.image!,
+                        width: 64,
+                        height: 64,
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  : Icon(member.icon, color: Colors.black, size: 40),
             ),
-            child: Icon(icon, color: const Color(0xFFFF8C00), size: 32),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -757,7 +804,7 @@ class TeamScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  name,
+                  member.name,
                   style: const TextStyle(
                     color: Color(0xFFE0E0E0),
                     fontSize: 18,
@@ -765,14 +812,14 @@ class TeamScreen extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  role,
+                  member.role,
                   style: const TextStyle(
                     color: Color(0xFFFF8C00),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
-                  email,
+                  member.email,
                   style: const TextStyle(
                     color: Color(0xFFE0E0E0),
                     fontSize: 14,
@@ -793,9 +840,7 @@ class TeamScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Team'),
-      ),
+      appBar: AppBar(title: const Text('Team')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -810,35 +855,26 @@ class TeamScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            _buildTeamMember(
-              'Advaita Amrit',
-              'Member',
-              'advaitaamrit@gmail.com',
-              Icons.person,
-            ),
-            _buildTeamMember(
-              'Yash Jadhav',
-              'Member',
-              'yashuyashu@corsit.sit',
-              Icons.engineering,
-            ),
-            _buildTeamMember(
-              'Jishnu Khargharia',
-              'Treasurer',
-              'treasurersahab@corsit.sit',
-              Icons.manage_accounts,
-            ),
-            _buildTeamMember(
-              'Dogesh Bhai',
-              'Elite Member',
-              'dogeshbhai@corsit.com',
-              Icons.pets,
-            ),
+            ..._members
+                .asMap()
+                .entries
+                .map((entry) => _buildTeamMember(entry.key))
+                .toList(),
           ],
         ),
       ),
     );
   }
+}
+
+class TeamMember {
+  String name;
+  String role;
+  String email;
+  IconData icon;
+  File? image;
+
+  TeamMember(this.name, this.role, this.email, this.icon, {this.image});
 }
 
 class AboutScreen extends StatelessWidget {
@@ -938,13 +974,29 @@ class AlumniScreen extends StatelessWidget {
   }
 }
 
-class ContactUsScreen extends StatelessWidget {
+class ContactUsScreen extends StatefulWidget {
   const ContactUsScreen({super.key});
+
+  @override
+  State<ContactUsScreen> createState() => _ContactUsScreenState();
+}
+
+class _ContactUsScreenState extends State<ContactUsScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final nameController = TextEditingController();
+  final emailController = TextEditingController();
+  final messageController = TextEditingController();
 
   Widget _socialIcon(IconData icon, String url) {
     return InkWell(
       onTap: () async {
-        // You can use url_launcher package for real links
+        if (await canLaunchUrl(Uri.parse(url))) {
+          await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+        } else {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Could not launch $url')));
+        }
       },
       child: CircleAvatar(
         backgroundColor: const Color(0xFFFF8C00),
@@ -953,12 +1005,49 @@ class ContactUsScreen extends StatelessWidget {
     );
   }
 
+  void _submitForm() async {
+    if (_formKey.currentState!.validate()) {
+      final name = nameController.text;
+      final email = emailController.text;
+      final message = messageController.text;
+
+      // Replace this with your unique Web3Forms Access Key
+      const accessKey = '191fb0bb-9571-4278-a4af-5a069efdc6ea';
+
+      final url = Uri.parse('https://api.web3forms.com/submit');
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode({
+          'access_key': accessKey,
+          'name': name,
+          'email': email,
+          'message': message,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Message sent successfully!')),
+        );
+        nameController.clear();
+        emailController.clear();
+        messageController.clear();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to send message. Please try again.'),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final _formKey = GlobalKey<FormState>();
-    final nameController = TextEditingController();
-    final emailController = TextEditingController();
-    final messageController = TextEditingController();
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -1006,6 +1095,12 @@ class ContactUsScreen extends StatelessWidget {
                     ),
                   ),
                   style: const TextStyle(color: Color(0xFFE0E0E0)),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your name.';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -1021,6 +1116,12 @@ class ContactUsScreen extends StatelessWidget {
                     ),
                   ),
                   style: const TextStyle(color: Color(0xFFE0E0E0)),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your email.';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -1037,23 +1138,28 @@ class ContactUsScreen extends StatelessWidget {
                     ),
                   ),
                   style: const TextStyle(color: Color(0xFFE0E0E0)),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a message.';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
+                  child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFFF8C00),
                       foregroundColor: Colors.black,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    onPressed: () {
-                      // You can add form validation and submission logic here
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Message submitted!')),
-                      );
-                    },
-                    child: const Text('Submit', style: TextStyle(fontSize: 18)),
+                    onPressed: _submitForm,
+                    icon: const Icon(Icons.send),
+                    label: const Text(
+                      'Send Message',
+                      style: TextStyle(fontSize: 18),
+                    ),
                   ),
                 ),
               ],
@@ -1065,48 +1171,200 @@ class ContactUsScreen extends StatelessWidget {
   }
 }
 
-class ChatScreen extends StatelessWidget {
+class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
+
+  @override
+  State<ChatScreen> createState() => _ChatScreenState();
+}
+
+class _ChatScreenState extends State<ChatScreen> {
+  final TextEditingController _controller = TextEditingController();
+  final List<Map<String, String>> _messages = [];
+  bool _isLoading = false;
+
+  final List<Map<String, String>> _introMessage = [
+    {
+      'sender': 'bot',
+      'text':
+          'Hello! I am the CORSIT chatbot. I can help you with questions about our club and robotics. Ask me anything!',
+    },
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _messages.addAll(_introMessage);
+  }
+
+  void _sendMessage() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+
+    setState(() {
+      _messages.add({'sender': 'user', 'text': text});
+      _isLoading = true;
+    });
+    _controller.clear();
+
+    // Replace this with your actual Gemini API key
+    const String apiKey = "AIzaSyBZnuJT8wtI3B4jjDyWz6d5_fJLlSKbH9A";
+    const String apiUrl =
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=$apiKey";
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          "contents": [
+            {
+              "role": "user",
+              "parts": [
+                {
+                  "text":
+                      "You are a friendly chatbot for the CORSIT robotics club. You should answer questions about CORSIT and robotics. For CORSIT details you can check www.corsit.in. If the robotics question is general answer it directly, if any specific queston is asked, say you can better ask a club mumber should I schedule a call back? I yes take number and mail it using Web3Forms api key= \"191fb0bb-9571-4278-a4af-5a069efdc6ea\". Keep your answers concise and engaging. Once the chat is closed send a copy to mail using Web3form api key=\"191fb0bb-9571-4278-a4af-5a069efdc6ea\". A user has asked: $text",
+                },
+              ],
+            },
+          ],
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final botMessage = data['candidates'][0]['content']['parts'][0]['text'];
+        setState(() {
+          _messages.add({'sender': 'bot', 'text': botMessage});
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _messages.add({
+            'sender': 'bot',
+            'text':
+                'Sorry, I am unable to connect to the server. Please try again later.',
+          });
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _messages.add({
+          'sender': 'bot',
+          'text': 'An error occurred. Please check your network connection.',
+        });
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Chat Support'),
+        title: const Text('CORSIT Chatbot'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Container(
-        color: const Color(0xFF121212),
-        child: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.chat_bubble_outline,
-                color: Color(0xFFFF8C00),
-                size: 64,
-              ),
-              SizedBox(height: 16),
-              Text(
-                'Chat Feature Coming Soon!',
-                style: TextStyle(
-                  color: Color(0xFFE0E0E0),
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                'We\'re working on implementing real-time chat support.',
-                style: TextStyle(color: Color(0xFFE0E0E0), fontSize: 16),
-                textAlign: TextAlign.center,
-              ),    
-            ],
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                final message = _messages[index];
+                final isUser = message['sender'] == 'user';
+                return Align(
+                  alignment: isUser
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    padding: const EdgeInsets.all(12),
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width * 0.75,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isUser
+                          ? const Color(0xFFFF8C00)
+                          : const Color(0xFF1E1E1E),
+                      borderRadius: BorderRadius.only(
+                        topLeft: const Radius.circular(16),
+                        topRight: const Radius.circular(16),
+                        bottomLeft: isUser
+                            ? const Radius.circular(16)
+                            : const Radius.circular(0),
+                        bottomRight: isUser
+                            ? const Radius.circular(0)
+                            : const Radius.circular(16),
+                      ),
+                    ),
+                    child: Text(
+                      message['text']!,
+                      style: TextStyle(
+                        color: isUser ? Colors.black : const Color(0xFFE0E0E0),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
-        ),
+          if (_isLoading)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: LinearProgressIndicator(
+                color: Color(0xFFFF8C00),
+                backgroundColor: Color(0xFF1E1E1E),
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Ask about CORSIT or robotics...',
+                      hintStyle: TextStyle(
+                        color: Colors.white.withOpacity(0.5),
+                      ),
+                      filled: true,
+                      fillColor: const Color(0xFF1E1E1E),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                    ),
+                    onSubmitted: (_) => _sendMessage(),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                GestureDetector(
+                  onTap: _sendMessage,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF8C00),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.send, color: Colors.black),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
