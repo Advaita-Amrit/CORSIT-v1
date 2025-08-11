@@ -1,6 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Correct placement of all permission tags -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+
     <application
-        android:label="corsit"
+        android:label="Corsit"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <activity
@@ -13,7 +18,8 @@
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
 
-            <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+            <!-- The permission tag that was previously here has been moved to the top. -->
+            
             <!-- Specifies an Android theme to apply to this Activity as soon as
                  the Android process has started. This theme is visible to the user
                  while the Flutter UI initializes. After that, this theme continues
