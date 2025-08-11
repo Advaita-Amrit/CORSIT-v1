@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "483799839585",
+    "project_id": "corsit-app-2025",
+    "storage_bucket": "corsit-app-2025.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:483799839585:android:fc7cbd1eb789c6cc638b20",
+        "android_client_info": {
+          "package_name": "com.corsit.club.corsit"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "483799839585-u3lvb2ljbt76bbbip7j0apqi74l1duvg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDI6fvCQOXz_u7Yz8OJdr8XpOyXz5p84wo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "483799839585-u3lvb2ljbt76bbbip7j0apqi74l1duvg.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "483799839585-g2q2dbkuhgli4mkfmhbh87jtvgd5ghjs.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.corsit.club.corsit"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

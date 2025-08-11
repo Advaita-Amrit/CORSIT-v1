@@ -5,8 +5,16 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'firebase_options.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const CORSITApp());
 }
 
@@ -50,7 +58,23 @@ class CORSITApp extends StatelessWidget {
           foregroundColor: Colors.black,
         ),
       ),
-      home: const RootPage(),
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.active) {
+            if (snapshot.hasData) {
+              return const ProfileScreen();
+            } else {
+              return const RootPage();
+            }
+          }
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -202,10 +226,7 @@ class _RootPageState extends State<RootPage> with TickerProviderStateMixin {
           }),
           _buildDrawerItem('Team', Icons.people, () {
             Navigator.pop(context); // Close drawer
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const AlumniScreen()),
-            );
+            setState(() => _selectedIndex = 3);
           }),
           _buildDrawerItem('Alumni', Icons.school, () {
             Navigator.pop(context); // Close drawer
@@ -221,6 +242,14 @@ class _RootPageState extends State<RootPage> with TickerProviderStateMixin {
               MaterialPageRoute(builder: (context) => const ContactUsScreen()),
             );
           }),
+          const Divider(color: Colors.grey),
+          _buildDrawerItem('Login', Icons.login, () {
+            Navigator.pop(context); // Close drawer
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+            );
+          }),
         ],
       ),
     );
@@ -231,6 +260,480 @@ class _RootPageState extends State<RootPage> with TickerProviderStateMixin {
       leading: Icon(icon, color: const Color(0xFFE0E0E0)),
       title: Text(title, style: const TextStyle(color: Color(0xFFE0E0E0))),
       onTap: onTap,
+    );
+  }
+}
+
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  Future<void> _signIn() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isLoading = true);
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ProfileScreen()),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      String message;
+      if (e.code == 'user-not-found') {
+        message = 'No user found for that email.';
+      } else if (e.code == 'wrong-password') {
+        message = 'Wrong password provided.';
+      } else {
+        message = 'An error occurred. Please try again.';
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('Member Login'),
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  'CORSIT Member Login',
+                  style: TextStyle(
+                    color: Color(0xFFFF8C00),
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 40),
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    labelStyle: TextStyle(color: Color(0xFFE0E0E0)),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFF8C00)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFF8C00)),
+                    ),
+                  ),
+                  style: const TextStyle(color: Color(0xFFE0E0E0)),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your email.';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Password',
+                    labelStyle: TextStyle(color: Color(0xFFE0E0E0)),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFF8C00)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFF8C00)),
+                    ),
+                  ),
+                  style: const TextStyle(color: Color(0xFFE0E0E0)),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your password.';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ResetPasswordScreen()),
+                      );
+                    },
+                    child: const Text(
+                      'Forgot Password?',
+                      style: TextStyle(color: Color(0xFFFF8C00)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF8C00),
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    onPressed: _isLoading ? null : _signIn,
+                    child: _isLoading
+                        ? const CircularProgressIndicator(
+                            color: Colors.black,
+                          )
+                        : const Text('Login', style: TextStyle(fontSize: 18)),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const RegistrationScreen()),
+                    );
+                  },
+                  child: const Text(
+                    'Create an account',
+                    style: TextStyle(color: Color(0xFFFF8C00)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class RegistrationScreen extends StatefulWidget {
+  const RegistrationScreen({super.key});
+
+  @override
+  State<RegistrationScreen> createState() => _RegistrationScreenState();
+}
+
+class _RegistrationScreenState extends State<RegistrationScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  // This is your whitelist of approved emails.
+  // You can easily update this list.
+  final List<String> _whitelistedEmails = [
+    'advaitaamrit@gmail.com',
+    'yashuyashu@corsit.sit',
+    'jishnukhargharia@corsit.sit',
+    'dogeshbhai@corsit.com',
+  ];
+
+  Future<void> _registerUser() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isLoading = true);
+
+    final email = _emailController.text.trim();
+
+    if (!_whitelistedEmails.contains(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You are not an authorized member to register.')),
+      );
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    try {
+      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: _passwordController.text,
+      );
+      if (mounted) {
+        Navigator.pop(context); // Pop registration screen on success
+      }
+    } on FirebaseAuthException catch (e) {
+      String message;
+      if (e.code == 'weak-password') {
+        message = 'The password provided is too weak.';
+      } else if (e.code == 'email-already-in-use') {
+        message = 'An account already exists for that email.';
+      } else {
+        message = 'An error occurred. Please try again.';
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('Member Registration'),
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  'CORSIT Member Registration',
+                  style: TextStyle(
+                    color: Color(0xFFFF8C00),
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 40),
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    labelStyle: TextStyle(color: Color(0xFFE0E0E0)),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFF8C00)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFF8C00)),
+                    ),
+                  ),
+                  style: const TextStyle(color: Color(0xFFE0E0E0)),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your email.';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Password',
+                    labelStyle: TextStyle(color: Color(0xFFE0E0E0)),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFF8C00)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFF8C00)),
+                    ),
+                  ),
+                  style: const TextStyle(color: Color(0xFFE0E0E0)),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your password.';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 40),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF8C00),
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    onPressed: _isLoading ? null : _registerUser,
+                    child: _isLoading
+                        ? const CircularProgressIndicator(
+                            color: Colors.black,
+                          )
+                        : const Text('Register', style: TextStyle(fontSize: 18)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class ResetPasswordScreen extends StatefulWidget {
+  const ResetPasswordScreen({super.key});
+
+  @override
+  State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
+}
+
+class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  bool _isLoading = false;
+
+  Future<void> _resetPassword() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isLoading = true);
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: _emailController.text);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Password reset email sent. Check your inbox!')),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      String message = 'An error occurred. Please try again.';
+      if (e.code == 'user-not-found') {
+        message = 'No user found for that email.';
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('Reset Password'),
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  'Forgot your password?',
+                  style: TextStyle(
+                    color: Color(0xFFFF8C00),
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Enter your email address below to receive a password reset link.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Color(0xFFE0E0E0), fontSize: 16),
+                ),
+                const SizedBox(height: 40),
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    labelStyle: TextStyle(color: Color(0xFFE0E0E0)),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFF8C00)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFF8C00)),
+                    ),
+                  ),
+                  style: const TextStyle(color: Color(0xFFE0E0E0)),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your email.';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF8C00),
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    onPressed: _isLoading ? null : _resetPassword,
+                    child: _isLoading
+                        ? const CircularProgressIndicator(
+                            color: Colors.black,
+                          )
+                        : const Text('Send Reset Link', style: TextStyle(fontSize: 18)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class ProfileScreen extends StatelessWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Member Profile'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut();
+            },
+          ),
+        ],
+      ),
+      body: const Center(
+        child: Text(
+          'Welcome, you are logged in!',
+          style: TextStyle(fontSize: 20),
+        ),
+      ),
     );
   }
 }
@@ -391,7 +894,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 style: TextStyle(color: Color(0xFFE0E0E0), fontSize: 14),
               ),
               SizedBox(width: 24),
-              Icon(Icons.calendar_today, color: Color(0xFFFF8C00), size: 20),
+              Icon(
+                Icons.calendar_today,
+                color: Color(0xFFFF8C00),
+                size: 20,
+              ),
               SizedBox(width: 8),
               Text(
                 'Yet to be announced',
@@ -422,18 +929,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           _buildProjectCard(
             'Line Following Robot',
             'An autonomous robot that follows a path using sensors.',
+            'Completed',
             Icons.track_changes,
           ),
           const SizedBox(height: 16),
           _buildProjectCard(
             'Gesture Controlled Bot',
             'A robot that responds to hand gestures using OpenCV.',
+            'Completed',
             Icons.gesture,
           ),
           const SizedBox(height: 16),
           _buildProjectCard(
             'Smart Home Automation',
             'IoT-based home automation for energy efficiency.',
+            'Completed',
             Icons.home,
           ),
         ],
@@ -441,47 +951,61 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildProjectCard(String title, String description, IconData icon) {
+  Widget _buildProjectCard(
+    String title,
+    String description,
+    String status,
+    IconData icon,
+  ) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: const Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFFF8C00).withOpacity(0.3)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFF8C00).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: const Color(0xFFFF8C00), size: 32),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF8C00).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: const Color(0xFFFF8C00), size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Color(0xFFE0E0E0),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      status,
+                      style: const TextStyle(
+                        color: Color(0xFFFF8C00),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Color(0xFFE0E0E0),
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  description,
-                  style: const TextStyle(
-                    color: Color(0xFFE0E0E0),
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
+          const SizedBox(height: 12),
+          Text(
+            description,
+            style: const TextStyle(color: Color(0xFFE0E0E0), fontSize: 14),
           ),
         ],
       ),
@@ -567,7 +1091,9 @@ class EventsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Events')),
+      appBar: AppBar(
+        title: const Text('Events'),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -678,7 +1204,9 @@ class ProjectsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Projects')),
+      appBar: AppBar(
+        title: const Text('Projects'),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -840,7 +1368,9 @@ class _TeamScreenState extends State<TeamScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Team')),
+      appBar: AppBar(
+        title: const Text('Team'),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -993,9 +1523,9 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
         if (await canLaunchUrl(Uri.parse(url))) {
           await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
         } else {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Could not launch $url')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not launch $url')),
+          );
         }
       },
       child: CircleAvatar(
@@ -1038,9 +1568,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
         messageController.clear();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to send message. Please try again.'),
-          ),
+          const SnackBar(content: Text('Failed to send message. Please try again.')),
         );
       }
     }
@@ -1156,10 +1684,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
                     ),
                     onPressed: _submitForm,
                     icon: const Icon(Icons.send),
-                    label: const Text(
-                      'Send Message',
-                      style: TextStyle(fontSize: 18),
-                    ),
+                    label: const Text('Send Message', style: TextStyle(fontSize: 18)),
                   ),
                 ),
               ],
@@ -1186,8 +1711,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final List<Map<String, String>> _introMessage = [
     {
       'sender': 'bot',
-      'text':
-          'Hello! I am the CORSIT chatbot. I can help you with questions about our club and robotics. Ask me anything!',
+      'text': 'Hello! I am the CORSIT chatbot. I can help you with questions about our club and robotics. Ask me anything!',
     },
   ];
 
@@ -1209,25 +1733,21 @@ class _ChatScreenState extends State<ChatScreen> {
 
     // Replace this with your actual Gemini API key
     const String apiKey = "AIzaSyBZnuJT8wtI3B4jjDyWz6d5_fJLlSKbH9A";
-    const String apiUrl =
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=$apiKey";
+    const String apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=$apiKey";
 
     try {
       final response = await http.post(
         Uri.parse(apiUrl),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: json.encode({
           "contents": [
             {
               "role": "user",
-              "parts": [
-                {
-                  "text":
-                      "You are a friendly chatbot for the CORSIT robotics club. You should answer questions about CORSIT and robotics. For CORSIT details you can check www.corsit.in. If the robotics question is general answer it directly, if any specific queston is asked, say you can better ask a club mumber should I schedule a call back? I yes take number and mail it using Web3Forms api key= \"191fb0bb-9571-4278-a4af-5a069efdc6ea\". Keep your answers concise and engaging. Once the chat is closed send a copy to mail using Web3form api key=\"191fb0bb-9571-4278-a4af-5a069efdc6ea\". A user has asked: $text",
-                },
-              ],
-            },
-          ],
+              "parts": [{"text": "You are a friendly chatbot for the CORSIT robotics club. You should answer questions about CORSIT and robotics. For CORSIT details you can check www.corsit.in. If the robotics question is general answer it directly, if any specific queston is asked, say you can better ask a club mumber should I schedule a call back? I yes take number and mail it using Web3Forms api key= \"191fb0bb-9571-4278-a4af-5a069efdc6ea\". Keep your answers concise and engaging. Once the chat is closed send a copy to mail using Web3form api key=\"191fb0bb-9571-4278-a4af-5a069efdc6ea\". A user has asked: $text"}]
+            }
+          ]
         }),
       );
 
@@ -1240,20 +1760,13 @@ class _ChatScreenState extends State<ChatScreen> {
         });
       } else {
         setState(() {
-          _messages.add({
-            'sender': 'bot',
-            'text':
-                'Sorry, I am unable to connect to the server. Please try again later.',
-          });
+          _messages.add({'sender': 'bot', 'text': 'Sorry, I am unable to connect to the server. Please try again later.'});
           _isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
-        _messages.add({
-          'sender': 'bot',
-          'text': 'An error occurred. Please check your network connection.',
-        });
+        _messages.add({'sender': 'bot', 'text': 'An error occurred. Please check your network connection.'});
         _isLoading = false;
       });
     }
@@ -1279,9 +1792,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 final message = _messages[index];
                 final isUser = message['sender'] == 'user';
                 return Align(
-                  alignment: isUser
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
+                  alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
                   child: Container(
                     margin: const EdgeInsets.symmetric(vertical: 4),
                     padding: const EdgeInsets.all(12),
@@ -1289,18 +1800,12 @@ class _ChatScreenState extends State<ChatScreen> {
                       maxWidth: MediaQuery.of(context).size.width * 0.75,
                     ),
                     decoration: BoxDecoration(
-                      color: isUser
-                          ? const Color(0xFFFF8C00)
-                          : const Color(0xFF1E1E1E),
+                      color: isUser ? const Color(0xFFFF8C00) : const Color(0xFF1E1E1E),
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(16),
                         topRight: const Radius.circular(16),
-                        bottomLeft: isUser
-                            ? const Radius.circular(16)
-                            : const Radius.circular(0),
-                        bottomRight: isUser
-                            ? const Radius.circular(0)
-                            : const Radius.circular(16),
+                        bottomLeft: isUser ? const Radius.circular(16) : const Radius.circular(0),
+                        bottomRight: isUser ? const Radius.circular(0) : const Radius.circular(16),
                       ),
                     ),
                     child: Text(
@@ -1332,19 +1837,14 @@ class _ChatScreenState extends State<ChatScreen> {
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       hintText: 'Ask about CORSIT or robotics...',
-                      hintStyle: TextStyle(
-                        color: Colors.white.withOpacity(0.5),
-                      ),
+                      hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
                       filled: true,
                       fillColor: const Color(0xFF1E1E1E),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(30),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 10,
-                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     ),
                     onSubmitted: (_) => _sendMessage(),
                   ),
@@ -1369,3 +1869,4 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 }
+
