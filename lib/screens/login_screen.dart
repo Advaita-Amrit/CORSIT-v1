@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:url_launcher/url_launcher.dart'; // Import for launching URLs
-import 'package:corsit_app/screens/profile_screen.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:corsit_app/screens/dashboard_screen.dart'; // New import
+import 'package:corsit_app/models/user_session.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,34 +14,52 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
-  bool _isPasswordVisible = false; // New state variable to control password visibility
+  bool _isPasswordVisible = false;
 
   Future<void> _signIn() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
+
+    const String sheetyApiUrl =
+        'https://api.sheety.co/11176e6932ade43f8fe0cd2e9c58baea/teamMember/credentials';
+
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailController.text,
-        password: _passwordController.text,
-      );
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const ProfileScreen()),
-        );
-      }
-    } on FirebaseAuthException catch (e) {
-      String message;
-      if (e.code == 'user-not-found') {
-        message = 'No user found for that email.';
-      } else if (e.code == 'wrong-password') {
-        message = 'Wrong password provided.';
+      final response = await http.get(Uri.parse(sheetyApiUrl));
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        final List<dynamic> users = responseData['credentials'] ?? [];
+
+        Map<String, dynamic>? authenticatedUser;
+
+        for (var user in users) {
+          if (user['username'] == _usernameController.text &&
+              user['password'] == _passwordController.text) {
+            authenticatedUser = user;
+            break;
+          }
+        }
+
+        if (authenticatedUser != null) {
+          UserSession().login(authenticatedUser);
+
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const DashboardScreen()),
+            );
+          }
+        } else {
+          throw Exception('Invalid username or password.');
+        }
       } else {
-        message = 'An error occurred. Please try again.';
+        throw Exception('Failed to connect to the authentication service.');
       }
+    } catch (e) {
+      String message = e.toString().replaceFirst('Exception: ', '');
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -50,16 +70,19 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // New function to launch WhatsApp chat
   Future<void> _launchWhatsApp() async {
-    final whatsappUri = Uri.parse('whatsapp://send?phone=919307553371&text=Contact%20App%20Dev%20Team%20%40CORSIT');
+    final whatsappUri = Uri.parse(
+      'whatsapp://send?phone=919307553371&text=Contact%20App%20Dev%20Team%20%40CORSIT',
+    );
     try {
       await launchUrl(whatsappUri);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Could not open WhatsApp. Please ensure it is installed.'),
+            content: Text(
+              'Could not open WhatsApp. Please ensure it is installed.',
+            ),
           ),
         );
       }
@@ -94,10 +117,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 40),
                 TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
+                  controller: _usernameController,
+                  keyboardType: TextInputType.text,
                   decoration: const InputDecoration(
-                    labelText: 'Email',
+                    labelText: 'Username',
                     labelStyle: TextStyle(color: Color(0xFFE0E0E0)),
                     enabledBorder: OutlineInputBorder(
                       borderSide: BorderSide(color: Color(0xFFFF8C00)),
@@ -109,7 +132,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: const TextStyle(color: Color(0xFFE0E0E0)),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your email.';
+                      return 'Please enter your username.';
                     }
                     return null;
                   },
@@ -117,8 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 20),
                 TextFormField(
                   controller: _passwordController,
-                  // Toggles visibility based on the state variable
-                  obscureText: !_isPasswordVisible, 
+                  obscureText: !_isPasswordVisible,
                   decoration: InputDecoration(
                     labelText: 'Password',
                     labelStyle: const TextStyle(color: Color(0xFFE0E0E0)),
@@ -128,10 +150,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     focusedBorder: const OutlineInputBorder(
                       borderSide: BorderSide(color: Color(0xFFFF8C00)),
                     ),
-                    // Adds a new IconButton to toggle password visibility
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                        _isPasswordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                         color: const Color(0xFFE0E0E0),
                       ),
                       onPressed: () {
@@ -153,7 +176,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: _launchWhatsApp, // Calls the new WhatsApp function
+                    onPressed: _launchWhatsApp,
                     child: const Text(
                       'Forgot Password?',
                       style: TextStyle(color: Color(0xFFFF8C00)),

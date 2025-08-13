@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
 import 'package:corsit_app/screens/about_screen.dart';
 import 'package:corsit_app/screens/alumni_screen.dart';
 import 'package:corsit_app/screens/chat_screen.dart';

@@ -1,10 +1,10 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart'; // Corrected import
+import 'dart:convert';
+import 'package:cloudinary_public/cloudinary_public.dart';
+import 'package:corsit_app/models/user_session.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -17,46 +17,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _currentPasswordController = TextEditingController();
-  bool _isLoading = false;
   File? _pickedImage;
+  bool _isLoading = false;
+  bool _isPasswordChanging = false;
+
+  final user = UserSession().currentUser;
 
   @override
   void initState() {
     super.initState();
-    // Pre-populate the name field with the current user's display name
-    _nameController.text = FirebaseAuth.instance.currentUser?.displayName ?? '';
+    // Pre-populate the name field with the current user's name
+    _nameController.text = user?['name'] ?? '';
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _passwordController.dispose();
-    _currentPasswordController.dispose();
     super.dispose();
   }
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _pickedImage = File(pickedFile.path);
-      });
-    }
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image == null) return;
+
+    setState(() => _pickedImage = File(image.path));
   }
 
   Future<String?> _uploadImage(File imageFile) async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return null;
+      final cloudinary = CloudinaryPublic(
+        'dn5unnavq', // Replace with your Cloudinary Cloud Name
+        'corsit_profiles', // Upload preset name from your Cloudinary settings
+        cache: false,
+      );
 
-      final storageRef = FirebaseStorage.instance
-          .ref()
-          .child('user_photos')
-          .child('${user.uid}.jpg');
-      await storageRef.putFile(imageFile);
-      return await storageRef.getDownloadURL();
+      CloudinaryResponse response = await cloudinary.uploadFile(
+        CloudinaryFile.fromFile(imageFile.path, folder: "corsit_profiles"),
+      );
+      return response.secureUrl;
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -68,41 +69,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _updateProfile() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate() || user == null) return;
     setState(() => _isLoading = true);
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
-
       String? photoUrl;
       if (_pickedImage != null) {
         photoUrl = await _uploadImage(_pickedImage!);
       }
 
-      // Update Firebase Auth profile
-      await user.updateDisplayName(_nameController.text);
-      if (photoUrl != null) {
-        await user.updatePhotoURL(photoUrl);
-      }
+      final updateData = {
+        'name': _nameController.text,
+        // Send the new URL or keep the existing one if no new photo was picked
+        'profilePhoto': photoUrl ?? user!['profilePhoto'],
+      };
 
-      // Update Firestore profile data
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-        'displayName': _nameController.text,
-        'photoUrl': photoUrl ?? user.photoURL,
-      }, SetOptions(merge: true));
+      const String sheetyApiUrl =
+          'https://api.sheety.co/11176e6932ade43f8fe0cd2e9c58baea/teamMember/credentials';
+      final int rowId = user!['id'];
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile updated successfully!')),
-        );
-        Navigator.pop(context);
+      final http.Response sheetyResponse = await http.put(
+        Uri.parse('$sheetyApiUrl/$rowId'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({"credential": updateData}),
+      );
+
+      if (sheetyResponse.statusCode == 200) {
+        // Update the local session data with the new values
+        UserSession().login({
+          ...user!,
+          'name': _nameController.text,
+          'profilePhoto': photoUrl ?? user!['profilePhoto'],
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profile updated successfully!')),
+          );
+        }
+      } else {
+        throw Exception('Failed to update profile on Sheety.');
       }
-    } on FirebaseAuthException catch (e) {
+    } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update profile: ${e.message}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('An error occurred: $e')));
       }
     } finally {
       if (mounted) {
@@ -111,6 +122,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  // New function to handle password change
   Future<void> _changePassword() async {
     if (_passwordController.text.isEmpty) {
       if (mounted) {
@@ -121,63 +133,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
-    // A dialog to get the current password for re-authentication
-    final reauthResult = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Re-authenticate'),
-        content: TextFormField(
-          controller: _currentPasswordController,
-          obscureText: true,
-          decoration: const InputDecoration(labelText: 'Current Password'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+    if (_passwordController.text.length < 6) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Password must be at least 6 characters.'),
           ),
-          ElevatedButton(
-            onPressed: () =>
-                Navigator.pop(context, _currentPasswordController.text),
-            child: const Text('Submit'),
-          ),
-        ],
-      ),
-    );
+        );
+      }
+      return;
+    }
 
-    if (reauthResult == null || reauthResult.isEmpty) return;
+    setState(() => _isPasswordChanging = true);
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
+      if (user == null) {
+        throw Exception("User not logged in.");
+      }
 
-      final cred = EmailAuthProvider.credential(
-        email: user.email!,
-        password: reauthResult,
+      const String sheetyApiUrl =
+          'https://api.sheety.co/11176e6932ade43f8fe0cd2e9c58baea/teamMember/credentials';
+      final int rowId = user!['id'];
+
+      final http.Response sheetyResponse = await http.put(
+        Uri.parse('$sheetyApiUrl/$rowId'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          "credential": {"password": _passwordController.text},
+        }),
       );
 
-      await user.reauthenticateWithCredential(cred);
-      await user.updatePassword(_passwordController.text);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Password updated successfully!')),
-        );
-        _passwordController.clear();
+      if (sheetyResponse.statusCode == 200) {
+        // Update the local session data with the new password
+        UserSession().login({...user!, 'password': _passwordController.text});
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Password updated successfully!')),
+          );
+          _passwordController.clear();
+        }
+      } else {
+        throw Exception('Failed to change password on Sheety.');
       }
-    } on FirebaseAuthException catch (e) {
+    } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to change password: ${e.message}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('An error occurred: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isPasswordChanging = false);
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-
     return Scaffold(
       appBar: AppBar(title: const Text('Update Profile')),
       body: SingleChildScrollView(
@@ -194,10 +206,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   backgroundColor: const Color(0xFFFF8C00),
                   backgroundImage: _pickedImage != null
                       ? FileImage(_pickedImage!)
-                      : user?.photoURL != null
-                      ? NetworkImage(user!.photoURL!)
+                      : user?['profilePhoto'] != null &&
+                            user!['profilePhoto'].isNotEmpty
+                      ? NetworkImage(user!['profilePhoto'] as String)
                       : null,
-                  child: _pickedImage == null && user?.photoURL == null
+                  child:
+                      _pickedImage == null &&
+                          (user?['profilePhoto'] == null ||
+                              user!['profilePhoto'].isEmpty)
                       ? const Icon(
                           Icons.camera_alt,
                           color: Colors.black,
@@ -205,6 +221,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         )
                       : null,
                 ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Username: ${user?['username'] ?? 'N/A'}',
+                style: const TextStyle(fontSize: 16, color: Colors.grey),
               ),
               const SizedBox(height: 20),
               TextFormField(
@@ -256,13 +277,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: _changePassword,
+                onPressed: _isPasswordChanging ? null : _changePassword,
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 50),
                   backgroundColor: const Color(0xFFFF8C00),
                   foregroundColor: Colors.black,
                 ),
-                child: const Text('Change Password'),
+                child: _isPasswordChanging
+                    ? const CircularProgressIndicator(color: Colors.black)
+                    : const Text('Change Password'),
               ),
             ],
           ),
