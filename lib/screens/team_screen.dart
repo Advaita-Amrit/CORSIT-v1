@@ -174,7 +174,7 @@ class _TeamScreenState extends State<TeamScreen> {
             onPressed: () {
               // TODO: Implement messaging functionality
             },
-            icon: const Icon(FontAwesomeIcons.linkedin),
+            icon: Image.asset('assets/icons/linkedin.png'),
           ),
         ],
       ),

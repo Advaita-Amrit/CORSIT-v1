@@ -4,25 +4,39 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloudinary_public/cloudinary_public.dart';
-import 'package:corsit_app/models/user_session.dart';
+import 'package:corsit_app/screens/dashboard_screen.dart';
+import 'package:corsit_app/models/project.dart';
+// A simple model to represent a project.
 
-class AddProjectScreen extends StatefulWidget {
-  const AddProjectScreen({super.key});
+class EditProjectScreen extends StatefulWidget {
+  final Project project;
+
+  const EditProjectScreen({super.key, required this.project});
 
   @override
-  State<AddProjectScreen> createState() => _AddProjectScreenState();
+  State<EditProjectScreen> createState() => _EditProjectScreenState();
 }
 
-class _AddProjectScreenState extends State<AddProjectScreen> {
+class _EditProjectScreenState extends State<EditProjectScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _projectNameController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _repoController = TextEditingController();
-  final _tagsController = TextEditingController();
-  final _developerController =
-      TextEditingController(); // New controller for Developer
-  List<File> _pickedImages = []; // List to hold multiple images
+  late final TextEditingController _projectNameController;
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _repoController;
+  late final TextEditingController _tagsController;
+  File? _pickedImage;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Pre-populate controllers with existing project data
+    _projectNameController = TextEditingController(text: widget.project.name);
+    _descriptionController = TextEditingController(
+      text: widget.project.description,
+    );
+    _repoController = TextEditingController(text: widget.project.githubRepo);
+    _tagsController = TextEditingController(text: widget.project.tags);
+  }
 
   @override
   void dispose() {
@@ -30,103 +44,83 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
     _descriptionController.dispose();
     _repoController.dispose();
     _tagsController.dispose();
-    _developerController.dispose();
     super.dispose();
   }
 
-  // Function to pick multiple images
-  Future<void> _pickImages() async {
+  Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final List<XFile> images = await picker.pickMultiImage();
-    if (images.isNotEmpty) {
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
       setState(() {
-        _pickedImages = images.map((image) => File(image.path)).toList();
+        _pickedImage = File(image.path);
       });
     }
   }
 
-  // Function to upload multiple images to Cloudinary
-  Future<List<String>> _uploadImages(List<File> imageFiles) async {
-    List<String> imageUrls = [];
+  Future<String?> _uploadImage(File imageFile) async {
     try {
       final cloudinary = CloudinaryPublic(
-        'dn5unnavq', // Replace with your Cloudinary Cloud Name
-        'CORSIT_Project_Images', // Your upload preset name
+        'YOUR_CLOUD_NAME', // Replace with your Cloudinary Cloud Name
+        'CORSIT_Project_Images', // Using your new upload preset
         cache: false,
       );
 
-      for (var imageFile in imageFiles) {
-        CloudinaryResponse response = await cloudinary.uploadFile(
-          CloudinaryFile.fromFile(imageFile.path, folder: "corsit_projects"),
-        );
-        imageUrls.add(response.secureUrl);
-      }
-      return imageUrls;
+      CloudinaryResponse response = await cloudinary.uploadFile(
+        CloudinaryFile.fromFile(imageFile.path, folder: "corsit_projects"),
+      );
+      return response.secureUrl;
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Failed to upload image: $e')));
       }
-      return [];
+      return null;
     }
   }
 
-  Future<void> _addProject() async {
+  Future<void> _updateProject() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
 
     const String sheetyApiUrl =
         'https://api.sheety.co/11176e6932ade43f8fe0cd2e9c58baea/teamMember/project';
-    final user = UserSession().currentUser;
-    if (user == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('You must be logged in to add a project.'),
-          ),
-        );
-      }
-      setState(() => _isLoading = false);
-      return;
-    }
 
     try {
-      String photoLinks = '';
-      if (_pickedImages.isNotEmpty) {
-        List<String> imageUrls = await _uploadImages(_pickedImages);
-        if (imageUrls.isEmpty) {
+      String? imageUrl;
+      if (_pickedImage != null) {
+        imageUrl = await _uploadImage(_pickedImage!);
+        if (imageUrl == null) {
           throw Exception('Image upload failed.');
         }
-        photoLinks = imageUrls.join(', '); // Join image links with a comma
       }
 
-      final response = await http.post(
-        Uri.parse(sheetyApiUrl),
+      final updateData = {
+        "name": _projectNameController.text,
+        "description": _descriptionController.text,
+        "githubRepo": _repoController.text,
+        "tags": _tagsController.text,
+        "imageUrl":
+            imageUrl ??
+            widget.project.imageUrl, // Update the URL or keep the old one
+      };
+
+      final response = await http.put(
+        Uri.parse('$sheetyApiUrl/${widget.project.id}'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          "project": {
-            "name": _projectNameController.text,
-            "details": _descriptionController.text, // Mapped to 'Details'
-            "tags": _tagsController.text,
-            "photos": photoLinks, // Mapped to 'Photos'
-            "developer": _developerController.text, // Mapped to 'Developer'
-            "author": user['username'], // Mapped to 'Author'
-            "githubRepo": _repoController.text,
-          },
-        }),
+        body: json.encode({"project": updateData}),
       );
 
       if (response.statusCode == 200) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Project added successfully!')),
+            const SnackBar(content: Text('Project updated successfully!')),
           );
           Navigator.pop(context);
         }
       } else {
         throw Exception(
-          'Failed to add project. Status code: ${response.statusCode}',
+          'Failed to update project. Status code: ${response.statusCode}',
         );
       }
     } catch (e) {
@@ -145,7 +139,7 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Project')),
+      appBar: AppBar(title: Text('Edit Project: ${widget.project.name}')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Form(
@@ -153,25 +147,18 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Image picker section
               GestureDetector(
-                onTap: _pickImages,
+                onTap: _pickImage,
                 child: Container(
                   height: 200,
                   color: Colors.grey[800],
-                  child: _pickedImages.isNotEmpty
-                      ? GridView.builder(
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 3,
-                                crossAxisSpacing: 4,
-                                mainAxisSpacing: 4,
-                              ),
-                          itemCount: _pickedImages.length,
-                          itemBuilder: (context, index) => Image.file(
-                            _pickedImages[index],
-                            fit: BoxFit.cover,
-                          ),
+                  child: _pickedImage != null
+                      ? Image.file(_pickedImage!, fit: BoxFit.cover)
+                      : widget.project.imageUrl != null &&
+                            widget.project.imageUrl!.isNotEmpty
+                      ? Image.network(
+                          widget.project.imageUrl!,
+                          fit: BoxFit.cover,
                         )
                       : const Center(
                           child: Column(
@@ -180,7 +167,7 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
                               Icon(Icons.add_a_photo, color: Colors.white),
                               SizedBox(height: 8),
                               Text(
-                                'Add Project Photos',
+                                'Change Project Image',
                                 style: TextStyle(color: Colors.white),
                               ),
                             ],
@@ -195,17 +182,6 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter a project name.';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _developerController,
-                decoration: const InputDecoration(labelText: 'Developer Name'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter the developer name.';
                   }
                   return null;
                 },
@@ -239,10 +215,10 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
               ),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: _isLoading ? null : _addProject,
+                onPressed: _isLoading ? null : _updateProject,
                 child: _isLoading
                     ? const CircularProgressIndicator(color: Colors.black)
-                    : const Text('Submit Project'),
+                    : const Text('Update Project'),
               ),
             ],
           ),
