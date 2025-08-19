@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:dotenv/dotenv.dart';
+
+final env = DotEnv()..load();
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -38,9 +41,9 @@ class _ChatScreenState extends State<ChatScreen> {
     });
     _controller.clear();
 
-    const String apiKey = "AIzaSyBZnuJT8wtI3B4jjDyWz6d5_fJLlSKbH9A";
+    const String apiKey = String.fromEnvironment('GEMINI_API');
     const String apiUrl =
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=$apiKey";
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-pr  eview-05-20:generateContent?key=$apiKey";
 
     try {
       final response = await http.post(
